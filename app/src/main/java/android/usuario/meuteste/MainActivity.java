@@ -30,20 +30,23 @@ import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.facebook.share.widget.LikeView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
 
     private CallbackManager callbackManager;
-    private TextView textViewMsg, textDuvida;
+    private TextView textViewMsg, textDuvida, msgPost;
     private EditText textoPost;
     private LoginManager loginManager;
     private List<String> facebookPermitions;
@@ -57,10 +60,30 @@ public class MainActivity extends AppCompatActivity {
     public ImageButton imbtLibras;
     public View view;
 
+
+    private String token;
+    private String userId;
+    private String message = "";
+    private String title = "";
+    private String imgURL = "";
+
+    // JSON Node names
+    private static final String TAG_ENTRIES = "data";
+    private static final String TAG_FROM = "from";
+    private static final String TAG_NAME = "name";
+    private static final String TAG_MESSAGE = "message";
+    private static final String TAG_DESCRIPTION = "name";
+    private static final String TAG_DESCRIPTION2 = "description";
+
+    // feeds JSONArray
+    JSONArray entries = null;
+
+    // Hashmap for ListView
+    ArrayList<HashMap<String, String>> entriesList = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         mudarFoto = false;
         duvida = false;
         setContentView(R.layout.activity_main);
@@ -92,29 +115,79 @@ public class MainActivity extends AppCompatActivity {
                 GraphRequest request = GraphRequest.newMeRequest(loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
                     @Override
                     public void onCompleted(JSONObject object, GraphResponse response) {
-                        System.out.println(object.toString());
+                        //System.out.println(object.toString());
+                        String jsonStr = object.toString();
+                        Log.v("feed", jsonStr.toString());
+                        if (jsonStr != null) {
+                            try {
+                                JSONObject jsonObj = object;
 
-                        try {
-                            new GraphRequest(
-                                    AccessToken.getCurrentAccessToken(),
-                                    "me/feed",
-                                    null,
-                                    HttpMethod.GET,
-                                    new GraphRequest.Callback() {
-                                        @Override
-                                        public void onCompleted(GraphResponse response) {
-                                            Log.v("feed", response.toString());
-                                        }
+                                // Getting JSON Array node
+                                JSONObject posts = jsonObj.getJSONObject("posts");
+                                entries = posts.getJSONArray(TAG_ENTRIES);
+                                Log.d("Entries: ", "> " + entries);
+
+                                // looping through All Feeds
+                                for (int i = 0; i < entries.length(); i++) {
+                                    JSONObject c = entries.getJSONObject(i);
+
+                                    if (c.has(TAG_MESSAGE)) {
+                                        message = c.getString(TAG_MESSAGE);
+                                    } // if it's a story, it has only description
+                                    else if (c.has(TAG_DESCRIPTION)) {
+                                        message = c.getString(TAG_DESCRIPTION);
+                                    } else
+                                    {message = "";}
+                                    // From node is JSON Object
+
+                                    if(c.has("picture")) {
+                                        imgURL = c.getString("picture");
+                                    } else {
+                                        imgURL = "";
                                     }
-                            );
+
+                                    // tmp hashmap for single message feed
+                                    HashMap<String, String> feed = new HashMap<String, String>();
+
+                                    // adding each child node to HashMap key => value
+                                    feed.put(TAG_NAME, "Titulo");
+                                    feed.put(TAG_MESSAGE, message);
+                                    feed.put("url", imgURL);
+
+
+                                    // adding feed to feed list
+                                    entriesList.add(feed);
+                                    // clear the fields
+                                    Log.v("Teste", title);
+                                    Log.v("Teste", message);
+                                    Log.v("Teste", imgURL);
+                                    title = "";
+                                    message = "";
+                                    imgURL = "";
+
+                                }
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            Log.e("ServiceHandler", "Couldn't get any data from the url");
+                        }
+
+
+
+                       try {
+
                             String name = object.getString("name");
                             textViewMsg = (TextView) findViewById(R.id.textViewMsg);
                             textViewMsg.setText(name.toString());
+                           msgPost = (TextView) findViewById(R.id.msgPost);
+                           textViewMsg.setText(entriesList.get(0).get("message"));
                             String myId = object.getString("id");
                             myURL = "https://www.facebook.com/profile.php?id="+myId;
                             if (!mudarFoto) {
                                 GetImage getImage = new GetImage();
-                                getImage.execute(myId);
+                                String imageURL = entriesList.get(0).get("url");
+                                getImage.execute(myId, imageURL);
                             }
                         } catch (JSONException e) {
                             // TODO Auto-generated catch block
@@ -123,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 Bundle parameters = new Bundle();
-                parameters.putString("fields", "id,name,email,posts");
+                parameters.putString("fields", "id,name,email,posts{picture,message,created_time,likes,comments,from,to}");
                 request.setParameters(parameters);
                 request.executeAsync();
 
@@ -195,7 +268,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Bitmap doInBackground(String... params) {// Busca a imagem
             String userId = params[0];
-            return getFacebookProfilePicture(userId);
+            String url = params[1];
+            return getFacebookPostPicture(url);
         }
     }
 
@@ -203,6 +277,20 @@ public class MainActivity extends AppCompatActivity {
         Bitmap bitmap = null;
         try {
             URL imageURL = new URL("https://graph.facebook.com/" + userID + "/picture?type=large");
+            bitmap = BitmapFactory.decodeStream(imageURL.openConnection().getInputStream());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return bitmap;
+    }
+
+    public static Bitmap getFacebookPostPicture(String url) {
+        Bitmap bitmap = null;
+        try {
+            URL imageURL = new URL(url);
             bitmap = BitmapFactory.decodeStream(imageURL.openConnection().getInputStream());
         } catch (MalformedURLException e) {
             e.printStackTrace();

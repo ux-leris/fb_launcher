@@ -44,14 +44,24 @@
         />
 
     <ImageView
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:id="@+id/imView"
         android:layout_below="@+id/textViewMsg"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="false"
         android:layout_alignRight="@+id/imagePhoto"
         android:layout_alignEnd="@+id/imagePhoto" />
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:id="@+id/msgPost"
+        android:textSize="30dp"
+        android:layout_below="@+id/textoPost"
+        />
 
 
     <EditText

@@ -7,7 +7,7 @@
     <string name="title_activity_video1">Video1Activity</string>
     <string name="title_activity_postar_texto">postarTextoActivity</string>
     <string name="title_activity_news_feed">NewsFeed</string>
-
+    <string name="news_feed_message">Aguarde enquanto as atualizações dos seus amigos são carregadas</string>
     <string name="news_feed">Ler ou Ouvir as atualizações dos amigos</string>
     <string name="talk_instruction">Clique na mensagem para ouvi-la</string>
 </resources>
