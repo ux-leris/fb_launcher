@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">MeuTeste</string>
+    <string name="action_settings">Settings</string>
+    <string name="facebook_app_id">1671586103111451</string>
+    <string name="title_activity_foto">FotoActivity</string>
+    <string name="title_activity_menu">MenuActivity</string>
+    <string name="title_activity_video1">Video1Activity</string>
+    <string name="title_activity_postar_texto">postarTextoActivity</string>
+    <string name="title_activity_news_feed">NewsFeed</string>
+
+    <string name="news_feed">Ler ou Ouvir as atualizações dos amigos</string>
+    <string name="talk_instruction">Clique na mensagem para ouvi-la</string>
+</resources>
