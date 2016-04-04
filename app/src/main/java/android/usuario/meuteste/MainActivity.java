@@ -75,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_DESCRIPTION = "name";
     private static final String TAG_DESCRIPTION2 = "description";
 
+
     // feeds JSONArray
     JSONArray entries = null;
 
@@ -100,120 +101,125 @@ public class MainActivity extends AppCompatActivity {
         loginManager = LoginManager.getInstance();
         loginManager.logInWithReadPermissions(this, facebookPermitions);
 
-        //botão like
+        //botão like (curtir)
         mLikeView = (LikeView) findViewById(R.id.like_view);
-        mLikeView.setObjectIdAndType(
-                "https://www.facebook.com/culturasurdasurcult/",
-                LikeView.ObjectType.PAGE);
 
-
-        loginManager.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
-            @Override
-            public void onSuccess(LoginResult loginResult) {
-                //Pega dados do usuário
-                Toast.makeText(getApplicationContext(), "SUCESSO!", Toast.LENGTH_LONG).show();
-                GraphRequest request = GraphRequest.newMeRequest(loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
+                loginManager.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
                     @Override
-                    public void onCompleted(JSONObject object, GraphResponse response) {
-                        //System.out.println(object.toString());
-                        String jsonStr = object.toString();
-                        Log.v("feed", jsonStr.toString());
-                        if (jsonStr != null) {
-                            try {
-                                JSONObject jsonObj = object;
+                    public void onSuccess(LoginResult loginResult) {
+                        //Pega dados do usuário
+                        Toast.makeText(getApplicationContext(), "SUCESSO!", Toast.LENGTH_LONG).show();
+                        GraphRequest request = GraphRequest.newMeRequest(loginResult.getAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
+                            @Override
+                            public void onCompleted(JSONObject object, GraphResponse response) {
+                                //System.out.println(object.toString());
+                                String jsonStr = object.toString();
+                                Log.v("feed", jsonStr.toString());
+                                if (jsonStr != null) {
+                                    try {
+                                        JSONObject jsonObj = object;
 
-                                // Getting JSON Array node
-                                JSONObject posts = jsonObj.getJSONObject("posts");
-                                entries = posts.getJSONArray(TAG_ENTRIES);
-                                Log.d("Entries: ", "> " + entries);
+                                        // Getting JSON Array node
+                                        JSONObject posts = jsonObj.getJSONObject("posts");
+                                        entries = posts.getJSONArray(TAG_ENTRIES);
+                                        Log.d("Entries: ", "> " + entries);
 
-                                // looping through All Feeds
-                                for (int i = 0; i < entries.length(); i++) {
-                                    JSONObject c = entries.getJSONObject(i);
+                                        // looping through All Feeds
+                                        for (int i = 0; i < entries.length(); i++) {
+                                            JSONObject c = entries.getJSONObject(i);
 
-                                    if (c.has(TAG_MESSAGE)) {
-                                        message = c.getString(TAG_MESSAGE);
-                                    } // if it's a story, it has only description
-                                    else if (c.has(TAG_DESCRIPTION)) {
-                                        message = c.getString(TAG_DESCRIPTION);
-                                    } else
-                                    {message = "";}
-                                    // From node is JSON Object
+                                            if (c.has(TAG_MESSAGE)) {
+                                                message = c.getString(TAG_MESSAGE);
+                                            } // if it's a story, it has only description
+                                            else if (c.has(TAG_DESCRIPTION)) {
+                                                message = c.getString(TAG_DESCRIPTION);
+                                            } else {
+                                                message = "";
+                                            }
+                                            // From node is JSON Object
 
-                                    if(c.has("picture")) {
-                                        imgURL = c.getString("picture");
-                                    } else {
-                                        imgURL = "";
+                                            if (c.has("picture")) {
+                                                imgURL = c.getString("picture");
+                                            } else {
+                                                imgURL = "";
+                                            }
+
+                                            // tmp hashmap for single message feed
+                                            HashMap<String, String> feed = new HashMap<String, String>();
+
+                                            // adding each child node to HashMap key => value
+                                            feed.put(TAG_NAME, "Titulo");
+                                            feed.put(TAG_MESSAGE, message);
+                                            feed.put("url", imgURL);
+
+
+                                            // adding feed to feed list
+                                            entriesList.add(feed);
+                                            // clear the fields
+                                            Log.v("Teste", title);
+                                            Log.v("Teste", message);
+                                            Log.v("Teste", imgURL);
+                                            title = "";
+                                            message = "";
+                                            imgURL = "";
+
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
                                     }
-
-                                    // tmp hashmap for single message feed
-                                    HashMap<String, String> feed = new HashMap<String, String>();
-
-                                    // adding each child node to HashMap key => value
-                                    feed.put(TAG_NAME, "Titulo");
-                                    feed.put(TAG_MESSAGE, message);
-                                    feed.put("url", imgURL);
-
-
-                                    // adding feed to feed list
-                                    entriesList.add(feed);
-                                    // clear the fields
-                                    Log.v("Teste", title);
-                                    Log.v("Teste", message);
-                                    Log.v("Teste", imgURL);
-                                    title = "";
-                                    message = "";
-                                    imgURL = "";
-
+                                } else {
+                                    Log.e("ServiceHandler", "Couldn't get any data from the url");
                                 }
-                            } catch (JSONException e) {
-                                e.printStackTrace();
+
+
+                                try {
+
+                                    String name = object.getString("name");
+                                    textViewMsg = (TextView) findViewById(R.id.textViewMsg);
+                                    textViewMsg.setText(name.toString());
+                                    msgPost = (TextView) findViewById(R.id.msgPost);
+                                    textViewMsg.setText(entriesList.get(0).get("message"));
+                                    String myId = object.getString("id");
+
+                                    //Tentativa para pegar comentários
+                                    TextView textComments = (TextView)findViewById(R.id.textComments);
+                                    textComments.setText(entriesList.get(0).get("comments{message}"));
+                                    //Fim tentativa
+
+                                    myURL = "https://www.facebook.com/profile.php?id=" + myId;
+                                    if (!mudarFoto) {
+                                        GetImage getImage = new GetImage();
+                                        String imageURL = entriesList.get(0).get("url");
+                                        //Carrega o Like com a url da imagem para poder curtir
+                                        mLikeView.setObjectIdAndType(
+                                                imageURL,
+                                                LikeView.ObjectType.PAGE);
+
+                                        getImage.execute(myId, imageURL);
+                                    }
+                                } catch (JSONException e) {
+                                    // TODO Auto-generated catch block
+                                    e.printStackTrace();
+                                }
                             }
-                        } else {
-                            Log.e("ServiceHandler", "Couldn't get any data from the url");
-                        }
+                        });
+                        Bundle parameters = new Bundle();
+                        parameters.putString("fields", "id,name,email,posts{picture,message,created_time,likes,comments,from,to}");
+                        request.setParameters(parameters);
+                        request.executeAsync();
+                    }
 
 
+                    @Override
+                    public void onCancel() {
+                        Toast.makeText(getApplicationContext(), "CANCEL!", Toast.LENGTH_LONG).show();
+                    }
 
-                       try {
-
-                            String name = object.getString("name");
-                            textViewMsg = (TextView) findViewById(R.id.textViewMsg);
-                            textViewMsg.setText(name.toString());
-                           msgPost = (TextView) findViewById(R.id.msgPost);
-                           textViewMsg.setText(entriesList.get(0).get("message"));
-                            String myId = object.getString("id");
-                            myURL = "https://www.facebook.com/profile.php?id="+myId;
-                            if (!mudarFoto) {
-                                GetImage getImage = new GetImage();
-                                String imageURL = entriesList.get(0).get("url");
-                                getImage.execute(myId, imageURL);
-                            }
-                        } catch (JSONException e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
+                    @Override
+                    public void onError(FacebookException exception) {
+                        Toast.makeText(getApplicationContext(), "ERROR!", Toast.LENGTH_LONG).show();
                     }
                 });
-                Bundle parameters = new Bundle();
-                parameters.putString("fields", "id,name,email,posts{picture,message,created_time,likes,comments,from,to}");
-                request.setParameters(parameters);
-                request.executeAsync();
-
-
-            }
-
-
-            @Override
-            public void onCancel() {
-                Toast.makeText(getApplicationContext(), "CANCEL!", Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onError(FacebookException exception) {
-                Toast.makeText(getApplicationContext(), "ERROR!", Toast.LENGTH_LONG).show();
-            }
-        });
 
         // Botão para Ajuda https://www.youtube.com/watch?v=mTv3JxdVb9o
         imbtLibras.setOnClickListener(new View.OnClickListener() {
@@ -253,7 +259,6 @@ public class MainActivity extends AppCompatActivity {
             if (mudarFoto)
                 imView.setImageBitmap(bitmap);
         }
-
     }
 
     public class GetImage extends AsyncTask<String, Void, Bitmap> {
@@ -297,7 +302,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return bitmap;
     }
 
